@@ -1,18 +1,70 @@
-name: Build
+name: CI
+
 on:
   push:
     branches:
       - main
   pull_request:
     types: [opened, synchronize, reopened]
+
 jobs:
+  tests:
+    name: Run Tests
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pypoetry
+            ~/.cache/pip
+          key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Run pre-commit
+        run: |
+          poetry run pre-commit install
+          poetry run pre-commit run --all-files
+
+      - name: Run tests with coverage
+        run: poetry run pytest --cov=lory --cov-report=xml
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+
   sonarqube:
     name: SonarQube
     runs-on: windows-latest
+    needs: tests   # 👈 Só roda se testes passarem
+
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0
+
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v6
         env:
