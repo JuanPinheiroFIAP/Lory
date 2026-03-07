@@ -1,12 +1,17 @@
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, Request
 
-chat_message = APIRouter(prefix="/webhooks", tags=['webhooks'])
+chat_message = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
 
 @chat_message.post("/whatsapp")
-async def receive_whatsapp_message(request: Request):
+async def receive_wpp_message(request: Request):
     data = await request.json()
-    print(f"Mensagem recebida: {data}")
-    
-    # O WhatsApp exige um retorno 200 OK rápido para confirmar o recebimento
+
+    # Verifica se é uma mensagem recebida
+    if data.get("event") == "MESSAGES_UPSERT":
+        message_body = data["data"]["message"]["conversation"]
+        sender_number = data["data"]["key"]["remoteJid"]
+
+        print(f"Mensagem de {sender_number}: {message_body}")
+
     return {"status": "success"}
