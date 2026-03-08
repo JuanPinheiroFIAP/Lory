@@ -10,10 +10,11 @@ on:
 jobs:
   tests:
     name: Run Tests
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -23,10 +24,14 @@ jobs:
       - name: Install Poetry
         run: pip install poetry
 
+      - name: Configure Poetry
+        run: poetry config virtualenvs.in-project true
+
       - name: Cache Poetry dependencies
         uses: actions/cache@v4
         with:
           path: |
+            .venv
             ~/.cache/pypoetry
             ~/.cache/pip
           key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
@@ -34,15 +39,15 @@ jobs:
             ${{ runner.os }}-poetry-
 
       - name: Install dependencies
-        run: poetry install --with dev
+        run: poetry install --no-interaction --no-root --with dev
 
       - name: Run pre-commit
         run: |
           poetry run pre-commit install
           poetry run pre-commit run --all-files
 
-      - name: Run tests with coverage
-        run: poetry run pytest --cov=src --cov-report=xml
+      - name: Run tests
+        run: poetry run pytest tests
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
@@ -51,12 +56,13 @@ jobs:
           path: coverage.xml
 
   sonarqube:
-    name: SonarQube
-    runs-on: windows-latest
-    needs: tests   # 👈 Só roda se testes passarem
+    name: SonarQube Analysis
+    runs-on: ubuntu-latest
+    needs: tests
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -65,7 +71,7 @@ jobs:
         with:
           name: coverage-report
 
-      - name: SonarQube Scan
+      - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
