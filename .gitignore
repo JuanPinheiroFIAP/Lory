@@ -1,7 +1,6 @@
-.env
-
 # Created by https://www.toptal.com/developers/gitignore/api/python,visualstudiocode,dotenv
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,visualstudiocode,dotenv
+*database.db
 
 ### dotenv ###
 .env
