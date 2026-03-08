@@ -5,5 +5,13 @@ client = TestClient(app)
 
 
 def test_webhook_endpoint():
-    response = client.post("/webhooks/whatsapp", json={"message": "teste"})
-    assert response.status_code in [200, 400]
+    payload = {
+        "data": {
+            "message": {"conversation": "teste"},
+            "key": {"remoteJid": "5511999999999@s.whatsapp.net"},
+        }
+    }
+
+    response = client.post("/webhooks/whatsapp", json=payload)
+
+    assert response.status_code == 200
